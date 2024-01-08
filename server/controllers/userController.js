@@ -1,13 +1,11 @@
-import asyncHandler from "express-async-handler";
 import generateToken from "../utils/generateToken.js";
-
 import User from "../models/userModel.js";
 import Usershelpers from "../helpers/user.js";
-
+import { checkUserName } from "../middlewares/usernameFilterMiddleware.js";
 // @desc    Auth user & get token
 // @route   POST /api/users/login
 // @access  Public
-const authUser = asyncHandler(async (req, res) => {
+const authUser = async (req, res) => {
   const { email, password } = req.body;
   if (!(email || password)) {
     return res.status(401).send({
@@ -31,18 +29,18 @@ const authUser = asyncHandler(async (req, res) => {
       message: "INVALID email or password",
     });
   }
-});
+};
 
 // @desc    Register a new user
 // @route   POST /api/users
 // @access  Public
-const registerUser = asyncHandler(async (req, res) => {
+const registerUser = async (req, res) => {
   let { name, email, password } = req.body;
 
   const userExists = await User.findOne({ email });
 
   if (userExists) {
-    return res.status(409).send({
+    return res.status(409).json({
       status: 409,
       message: "User with that Email already exists",
     });
@@ -56,11 +54,15 @@ const registerUser = asyncHandler(async (req, res) => {
     });
     if (user) {
       return res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        token: generateToken(user._id),
+        status: 201,
+        message: "User successfully created",
+        data: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          token: generateToken(user._id),
+        },
       });
     }
   } catch (error) {
@@ -69,27 +71,12 @@ const registerUser = asyncHandler(async (req, res) => {
       message: error.message,
     });
   }
-
-  //   if (user) {
-  //     return res.status(201).json({
-  //       _id: user._id,
-  //       name: user.name,
-  //       email: user.email,
-  //       isAdmin: user.isAdmin,
-  //       token: generateToken(user._id),
-  //     });
-  //   } else {
-  //     return res.status(400).send({
-  //       status: 400,
-  //       message: "Invalid user data",
-  //     });
-  //   }
-});
+};
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
 // @access  Private
-const getUserProfile = asyncHandler(async (req, res) => {
+const getUserProfile = async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
@@ -103,5 +90,5 @@ const getUserProfile = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-});
+};
 export { authUser, registerUser, getUserProfile };
